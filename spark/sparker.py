@@ -4,7 +4,7 @@ from pyspark.sql import SparkSession
 from .schemas import *
 
 
-def execute_spark(t1, t1_alias, t2, t2_alias, c1, c2):
+def execute_query1(t1, t1_alias, t2, t2_alias, c1, c2):
     sc = SparkContext('local', 'cloud')
     spark = SparkSession(sc)
     t1_alias_obt, attr1 = c1[0].split('.')
