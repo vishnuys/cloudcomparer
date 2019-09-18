@@ -30,3 +30,10 @@ def execute_query1(t1, t1_alias, t2, t2_alias, c1, c2):
         df2 = spark.read.csv(file_two, header=False, schema=rating_schema)
     df1.show()
     df2.show()
+    joined = df1.join(df2, df1[attr1] == df2[attr2])
+    joined.show()
+    # c2_attr = c2[0].split('.')[-1]
+    # parameter = int(c2[2]) if c2[2].isnumeric() else c2[2]
+    # print(c2_attr, parameter)
+    # filtered = joined.filter(joined[c2_attr] == parameter)
+    # filtered.show()

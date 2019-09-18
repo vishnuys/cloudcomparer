@@ -4,10 +4,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.http import HttpResponse
 from spark.sparker import execute_query1
+from time import time
 
 
 # Create your views here.
-
 class DefaultView(TemplateView):
 
     def get(self, request):
@@ -27,5 +27,8 @@ class DefaultView(TemplateView):
         t2, t2_alias = queryList[joinIndex + 1:onIndex]
         c1 = queryList[onIndex + 1:whereIndex]
         c2 = queryList[whereIndex + 1:]
+        spark_start = time()
         execute_query1(t1, t1_alias, t2, t2_alias, c1, c2)
-        return HttpResponse('Success')
+        spark_end = time()
+        spark_time = spark_end - spark_start
+        return HttpResponse(spark_time)
