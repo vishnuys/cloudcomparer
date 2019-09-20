@@ -48,9 +48,13 @@ def execute_query1(t1, t1_alias, t2, t2_alias, c1, c2):
         filtered = joined.filter(col(c2_attr) <= parameter)
     elif operator == '>=':
         filtered = joined.filter(col(c2_attr) >= parameter)
-    elif operator == '<>':
+    elif operator == '<>' or operator == '!=':
         filtered = joined.filter(col(c2_attr) != parameter)
 
     # filtered.show()
     # print(joined.count(), filtered.count())
     return filtered.toJSON().map(lambda j: json.loads(j)).collect()
+
+
+def execute_query2():
+    pass
