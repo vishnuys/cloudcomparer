@@ -1,4 +1,8 @@
 def handle_condition(param):
+    if len(param) == 2:
+        param = ''.join(param)
+    else:
+        param = param[0]
     res = []
     if '=' in param:
         res = param.split('=')

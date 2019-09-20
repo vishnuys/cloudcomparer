@@ -50,18 +50,18 @@ class DefaultView(TemplateView):
                     t2_alias = ''
                 c1 = query_list[onIndex + 1:whereIndex]
                 c2 = query_list[whereIndex + 1:]
-                if len(c1) == 1:
+                if len(c1) < 3:
                     c1 = handle_condition(c1)
-                if len(c2) == 1:
+                if len(c2) < 3:
                     c2 = handle_condition(c2)
             except Exception as e:
                 print(e)
                 spark_result = 'Error occured while processing query'
-            try:
-                spark_result = execute_query1(t1, t1_alias, t2, t2_alias, c1, c2)
-            except Exception as e:
-                print(e)
-                spark_result = 'Error occured while executing spark'
+            # try:
+            spark_result = execute_query1(t1, t1_alias, t2, t2_alias, c1, c2)
+            # except Exception as e:
+            #     print(e)
+            #     spark_result = 'Error occured while executing spark'
         elif query_type == 'two':
             try:
                 selectIndex = query_list.index('SELECT')
