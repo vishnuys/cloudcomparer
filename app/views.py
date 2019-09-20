@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from spark.sparker import execute_query1, execute_query2
 from time import time
 from json import dumps
@@ -81,7 +81,6 @@ class DefaultView(TemplateView):
                             formattedSelects.append(i)
                     else:
                         formattedSelects.append(i)
-                print(formattedSelects)
                 havingCondition = []
                 if 'HAVING' in query_list:
                     havingIndex = query_list.index('HAVING')
@@ -97,10 +96,12 @@ class DefaultView(TemplateView):
                 print(e)
                 spark_result = 'Error occured while processing query'
             try:
-                spark_result = execute_query2(table, groupParameters, havingCondition)
+                spark_result = execute_query2(table, groupParameters, havingCondition, formattedSelects)
             except Exception as e:
                 print(e)
                 spark_result = 'Error occured while executing spark'
+        else:
+            return HttpResponseBadRequest('Invalid SQL Query. Please input valid SQL query')
         spark_end = time()
         spark_time = spark_end - spark_start
         end_result = {

@@ -58,13 +58,12 @@ def execute_query1(t1, t1_alias, t2, t2_alias, c1, c2):
     elif operator == '<>' or operator == '!=':
         filtered = joined.filter(col(c2_attr) != parameter)
 
-    # filtered.show()
+    # filtered.show(filtered.count())
     # print(joined.count(), filtered.count())
     return filtered.toJSON().map(lambda j: json.loads(j)).collect()
 
 
-def execute_query2(table):
-    print(table)
+def execute_query2(table, groupParameters, havingCondition, formattedSelects):
     csv_file = os.path.join('files', table + '.csv')
     if table == 'users':
         dataframe = spark.read.csv(csv_file, header=False, schema=users_schema)
