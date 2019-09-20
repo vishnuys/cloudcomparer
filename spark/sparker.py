@@ -4,12 +4,19 @@ from pyspark.sql import SparkSession
 from .schemas import *
 import json
 
+sc = SparkContext('local', 'cloud')
+spark = SparkSession(sc)
+
 
 def execute_query1(t1, t1_alias, t2, t2_alias, c1, c2):
-    sc = SparkContext('local', 'cloud')
-    spark = SparkSession(sc)
-    t1_alias_obt, attr1 = c1[0].split('.')
-    t2_alias_obt, attr2 = c1[2].split('.')
+    if '.' in c1[0]:
+        t1_alias_obt, attr1 = c1[0].split('.')
+    else:
+        attr1 = c1[0]
+    if '.' in c1[2]:
+        t2_alias_obt, attr2 = c1[2].split('.')
+    else:
+        attr2 = c1[2]
     file_one = os.path.join('files', t1 + '.csv')
     file_two = os.path.join('files', t2 + '.csv')
     if t1 == 'users':
@@ -56,5 +63,17 @@ def execute_query1(t1, t1_alias, t2, t2_alias, c1, c2):
     return filtered.toJSON().map(lambda j: json.loads(j)).collect()
 
 
-def execute_query2():
-    pass
+def execute_query2(table):
+    print(table)
+    csv_file = os.path.join('files', table + '.csv')
+    if table == 'users':
+        dataframe = spark.read.csv(csv_file, header=False, schema=users_schema)
+    elif table == 'zipcodes':
+        dataframe = spark.read.csv(csv_file, header=False, schema=zipcodes_schema)
+    elif table == 'movies':
+        dataframe = spark.read.csv(csv_file, header=False, schema=movies_schema)
+    elif table == 'rating':
+        dataframe = spark.read.csv(csv_file, header=False, schema=rating_schema)
+
+    dataframe.show()
+    print(dataframe.count())
