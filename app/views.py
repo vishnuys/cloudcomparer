@@ -7,6 +7,7 @@ from spark.sparker import execute_query1, execute_query2
 from time import time
 from json import dumps
 from .helper import handle_condition
+from traceback import print_exc
 # from IPython import embed
 
 
@@ -54,14 +55,17 @@ class DefaultView(TemplateView):
                     c1 = handle_condition(c1)
                 if len(c2) < 3:
                     c2 = handle_condition(c2)
-            except Exception as e:
-                print(e)
-                spark_result = 'Error occured while processing query'
-            # try:
-            spark_result = execute_query1(t1, t1_alias, t2, t2_alias, c1, c2)
-            # except Exception as e:
-            #     print(e)
-            #     spark_result = 'Error occured while executing spark'
+            except TypeError:
+                print_exc()
+                spark_result = 'Invalid comparison operator. Please enter valid comparison operator.'
+            except Exception:
+                print_exc()
+                spark_result = 'Error occured while processing query.'
+            try:
+                spark_result = execute_query1(t1, t1_alias, t2, t2_alias, c1, c2)
+            except Exception:
+                print_exc()
+                spark_result = 'Error occured while executing spark.'
         elif query_type == 'two':
             try:
                 selectIndex = query_list.index('SELECT')
@@ -81,6 +85,22 @@ class DefaultView(TemplateView):
                             formattedSelects.append(i)
                     else:
                         formattedSelects.append(i)
+                func = [x for x in formattedSelects if '(' in x or ')' in x]
+                selectList = [x for x in formattedSelects if x not in func]
+                if len(func) == 1:
+                    func = func[0]
+                    obIndex = func.index('(')
+                    cbIndex = func.index(')')
+                    functionType = func[:obIndex]
+                    functionParameter = func[obIndex + 1:cbIndex]
+                elif len(func) == 2:
+                    obpart = func[0] if '(' in func[0] else func[1]
+                    cbpart = func[1] if ')' in func[1] else func[0]
+                    func = obpart + cbpart
+                    obIndex = func.index('(')
+                    cbIndex = func.index(')')
+                    functionType = func[:obIndex]
+                    functionParameter = func[obIndex + 1:cbIndex]
                 havingCondition = []
                 if 'HAVING' in query_list:
                     havingIndex = query_list.index('HAVING')
@@ -92,16 +112,16 @@ class DefaultView(TemplateView):
                     groupParameters = groupParameters.split(',')
                 if ',' in groupParameters:
                     groupParameters.remove(',')
-            except Exception as e:
-                print(e)
-                spark_result = 'Error occured while processing query'
+            except Exception:
+                print_exc()
+                spark_result = 'Error occured while processing query.'
             try:
-                spark_result = execute_query2(table, groupParameters, havingCondition, formattedSelects)
-            except Exception as e:
-                print(e)
-                spark_result = 'Error occured while executing spark'
+                spark_result = execute_query2(table, groupParameters, havingCondition, selectList, functionType, functionParameter)
+            except Exception:
+                print_exc()
+                spark_result = 'Error occured while executing spark.'
         else:
-            return HttpResponseBadRequest('Invalid SQL Query. Please input valid SQL query')
+            return HttpResponseBadRequest('Invalid SQL Query. Please input valid SQL query.')
         spark_end = time()
         spark_time = spark_end - spark_start
         end_result = {

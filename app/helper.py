@@ -32,4 +32,6 @@ def handle_condition(param):
         res = param.split('!=')
         res = [x.strip() for x in res if x != '']
         res = [res[0], '!=', res[1]]
+    else:
+        raise TypeError('Invalid comparison operator. Please enter valid comparison operator.')
     return res
