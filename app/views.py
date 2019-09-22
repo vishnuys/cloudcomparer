@@ -28,6 +28,10 @@ class DefaultView(TemplateView):
         mapreduce_start = mapreduce_end = 0
         spark_result = ''
         mapreduce_result = ''
+        mapper_input = {}
+        mapper_output_sample = []
+        reducer_input = {}
+        spark_operations = []
         if 'group' in query.lower():
             query_type = 'two'
         elif 'inner' in query.lower():
@@ -98,6 +102,21 @@ class DefaultView(TemplateView):
                 row_2 = table_row_mapper[t2][attr2]
                 mapper_path = os.path.join(BASE_DIR, 'mapreduce/mapper_hdfs.py')
                 reducer_path = os.path.join(BASE_DIR, 'mapreduce/reducer_hdfs.py')
+                mapper_input = {
+                    'input_file_one': fileinput_one,
+                    'input_file_two': fileinput_two,
+                    'table_1': t1,
+                    'table_2': t2,
+                    'table1_row': row_1,
+                    'table2_row': row_2,
+                }
+                reducer_input = {
+                    'mapper_output': 'Output obtained from map function',
+                    'where_condition_table': condition_table,
+                    'where_condition_row': condition_row,
+                    'where_condition_operator': operator,
+                    'where_condition_operand': parameter,
+                }
                 cmd = 'hadoop jar %s -input %s %s -mapper "%s %s %s %s %s" -reducer "%s %s %s %s %s" -output %s' % (HADOOP_STREAMER_PATH, fileinput_one, fileinput_two, mapper_path, t1, t2, row_1, row_2, reducer_path, condition_table, condition_row, operator, parameter, output_path)
                 mapreduce_start = time()
                 call(cmd, shell=True)
@@ -113,7 +132,7 @@ class DefaultView(TemplateView):
                 mapreduce_result = 'Error occured while executing mapreduce.'
             try:
                 spark_start = time()
-                spark_result = execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter, operator)
+                spark_result, spark_operations = execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter, operator)
                 spark_end = time()
             except Exception:
                 print_exc()
@@ -182,6 +201,8 @@ class DefaultView(TemplateView):
                     else:
                         formattedGroups.append(i)
                 groupParameters = formattedGroups
+
+
             except Exception:
                 print_exc()
                 spark_result = 'Error occured while processing query.'
@@ -196,6 +217,16 @@ class DefaultView(TemplateView):
                 mapper_path = os.path.join(BASE_DIR, 'mapreduce/q2_mapper.py')
                 reducer_path = os.path.join(BASE_DIR, 'mapreduce/q2_reducer.py')
                 cmd = ' hadoop jar %s -input %s -mapper "%s %s" -reducer "%s %s %s %s" -output %s' % (HADOOP_STREAMER_PATH, fileinput, mapper_path, rowstring, reducer_path, functionType, functionRow, havingParameter, output_path)
+                mapper_input = {
+                    'input_file': fileinput,
+                    'groupby_rows_list': rowlist,
+                }
+                reducer_input = {
+                    'mapper_output': 'Output obtained from map function',
+                    'aggregation_function': functionType,
+                    'column_row_number': functionRow,
+                    'having_condition_operand': havingParameter
+                }
                 mapreduce_start = time()
                 call(cmd, shell=True)
                 output_file = os.path.join(output_path, 'part-00000')
@@ -211,7 +242,7 @@ class DefaultView(TemplateView):
 
             try:
                 spark_start = time()
-                spark_result = execute_query2(table, groupParameters, selectList, functionType, functionParameter, havingFunction, havingOperator, havingParameter)
+                spark_result, spark_operations = execute_query2(table, groupParameters, selectList, functionType, functionParameter, havingFunction, havingOperator, havingParameter)
                 spark_end = time()
             except Exception:
                 print_exc()
@@ -222,11 +253,13 @@ class DefaultView(TemplateView):
         mapreduce_time = mapreduce_end - mapreduce_start
         end_result = {
             'mapreduce': {
+                'mapper_input': mapper_input,
+                'reducer_input': reducer_input,
                 'mapreduce_time': mapreduce_time,
                 'mapreduce_result': mapreduce_result,
-
             },
             'spark': {
+                'spark_operations': spark_operations,
                 'spark_time': spark_time,
                 'spark_result': spark_result
             }
