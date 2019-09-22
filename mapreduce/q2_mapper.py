@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3.7
 import sys
 
 group_by_cols = sys.argv[1:]
