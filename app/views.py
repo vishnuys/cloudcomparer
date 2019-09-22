@@ -154,10 +154,16 @@ class DefaultView(TemplateView):
                     functionType = func[:obIndex]
                     functionParameter = func[obIndex + 1:cbIndex]
                 havingCondition = []
+                havingFunction = ''
+                havingParameter = ''
+                havingOperator = ''
                 if 'HAVING' in query_list:
                     havingIndex = query_list.index('HAVING')
                     groupParameters = query_list[byIndex + 1:havingIndex]
                     havingCondition = query_list[havingIndex + 1:]
+                    havingFunction = havingCondition[0]
+                    havingParameter = int(havingCondition[2]) if havingCondition[2].isnumeric() else havingCondition[2].strip('"').strip("'")
+                    havingOperator = havingCondition[1]
                 else:
                     groupParameters = query_list[byIndex + 1:]
                 if len(groupParameters) == 1 and ',' in groupParameters:
@@ -168,7 +174,9 @@ class DefaultView(TemplateView):
                 print_exc()
                 spark_result = 'Error occured while processing query.'
             try:
-                spark_result = execute_query2(table, groupParameters, havingCondition, selectList, functionType, functionParameter)
+                spark_start = time()
+                spark_result = execute_query2(table, groupParameters, selectList, functionType, functionParameter, havingFunction, havingOperator, havingParameter)
+                spark_end = time()
             except Exception:
                 print_exc()
                 spark_result = 'Error occured while executing spark.'

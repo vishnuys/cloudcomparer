@@ -3,7 +3,6 @@ from pyspark import SparkContext
 from pyspark.sql import SparkSession
 from .schemas import *
 import json
-from IPython import embed
 
 sc = SparkContext('local', 'cloud')
 spark = SparkSession(sc)
@@ -59,7 +58,7 @@ def execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter,
     return filtered.toJSON().map(lambda j: json.loads(j)).collect()
 
 
-def execute_query2(table, groupParameters, havingCondition, selectList, functionType, functionParameter):
+def execute_query2(table, groupParameters, selectList, functionType, functionParameter, havingFunction, havingOperator, havingParameter):
     csv_file = os.path.join('files', table + '.csv')
     if table == 'users':
         dataframe = spark.read.csv(csv_file, header=False, schema=users_schema)
@@ -83,7 +82,6 @@ def execute_query2(table, groupParameters, havingCondition, selectList, function
     elif len(groupParameters) == 5:
         grouped = dataframe.groupBy(groupParameters[0], groupParameters[1], groupParameters[2], groupParameters[3], groupParameters[4])
 
-    print("%r" % functionParameter)
     if functionType.lower() == 'count':
         result = grouped.count()
     elif functionType.lower() == 'min':
@@ -92,4 +90,23 @@ def execute_query2(table, groupParameters, havingCondition, selectList, function
         result = grouped.max()
     elif functionType.lower() == 'sum':
         result = grouped.sum()
-    return result.toJSON().map(lambda j: json.loads(j)).collect()
+
+    if len(havingFunction) > 0:
+        havingFunction = havingFunction.lower()
+        col_name = 'count' if 'count' in havingFunction else havingFunction
+        if havingOperator == '=':
+            filtered = result.filter(col(col_name) == havingParameter)
+        elif havingOperator == '<':
+            filtered = result.filter(col(col_name) < havingParameter)
+        elif havingOperator == '>':
+            filtered = result.filter(col(col_name) > havingParameter)
+        elif havingOperator == '<=':
+            filtered = result.filter(col(col_name) <= havingParameter)
+        elif havingOperator == '>=':
+            filtered = result.filter(col(col_name) >= havingParameter)
+        elif havingOperator == '<>' or havingOperator == '!=':
+            filtered = result.filter(col(col_name) != havingParameter)
+        else:
+            return 'Invalid comparision operator obtained. Please enter valid comparision operator.'
+
+    return filtered.toJSON().map(lambda j: json.loads(j)).collect()
