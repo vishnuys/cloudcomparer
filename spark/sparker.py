@@ -9,15 +9,7 @@ sc = SparkContext('local', 'cloud')
 spark = SparkSession(sc)
 
 
-def execute_query1(t1, t1_alias, t2, t2_alias, c1, c2):
-    if '.' in c1[0]:
-        t1_alias_obt, attr1 = c1[0].split('.')
-    else:
-        attr1 = c1[0]
-    if '.' in c1[2]:
-        t2_alias_obt, attr2 = c1[2].split('.')
-    else:
-        attr2 = c1[2]
+def execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter, operator):
     file_one = os.path.join('files', t1 + '.csv')
     file_two = os.path.join('files', t2 + '.csv')
     if t1 == 'users':
@@ -45,11 +37,8 @@ def execute_query1(t1, t1_alias, t2, t2_alias, c1, c2):
     # df2.show()
     joined = df1.join(df2, attr1)
     # joined.show()
-    c2_attr = c2[0].split('.')[-1]
-    parameter = int(c2[2]) if c2[2].isnumeric() else c2[2].strip('"').strip("'")
-    operator = c2[1]
-    print("%r %r %r" % (c2_attr, operator, parameter))
-    print(type(c2_attr), type(operator), type(parameter))
+    # print("%r %r %r" % (c2_attr, operator, parameter))
+    # print(type(c2_attr), type(operator), type(parameter))
     if operator == '=':
         filtered = joined.filter(col(c2_attr) == parameter)
     elif operator == '<':
