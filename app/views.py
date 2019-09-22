@@ -23,22 +23,28 @@ class DefaultView(TemplateView):
     @method_decorator(csrf_exempt)
     def post(self, request):
         query = request.POST['query']
+
+        # Initializations #
         query_type = ''
         spark_start = spark_end = 0
         mapreduce_start = mapreduce_end = 0
         spark_result = ''
         mapreduce_result = ''
         mapper_input = {}
-        mapper_output_sample = []
         reducer_input = {}
         spark_operations = []
+
+        # Determine Query type #
         if 'group' in query.lower():
             query_type = 'two'
         elif 'inner' in query.lower():
             query_type = 'one'
         query_list = query.split()
         query_list = [q for q in query_list if query != '']
+
         if query_type == 'one':
+
+            # Process Query one and extract data #
             try:
                 fromIndex = query_list.index('FROM')
                 innerIndex = query_list.index('INNER')
@@ -93,6 +99,8 @@ class DefaultView(TemplateView):
             except Exception:
                 print_exc()
                 spark_result = 'Error occured while processing query.'
+
+            # Execute Mapreduce #
             try:
                 output_folder = ''.join(random.choice(string.ascii_uppercase) for _ in range(8))
                 output_path = os.path.join('output', output_folder)
@@ -130,6 +138,8 @@ class DefaultView(TemplateView):
             except Exception:
                 print_exc()
                 mapreduce_result = 'Error occured while executing mapreduce.'
+
+            # Execute Spark #
             try:
                 spark_start = time()
                 spark_result, spark_operations = execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter, operator)
@@ -138,6 +148,8 @@ class DefaultView(TemplateView):
                 print_exc()
                 spark_result = 'Error occured while executing spark.'
         elif query_type == 'two':
+
+            # Process Query two and extract data #
             try:
                 selectIndex = query_list.index('SELECT')
                 fromIndex = query_list.index('FROM')
@@ -201,12 +213,11 @@ class DefaultView(TemplateView):
                     else:
                         formattedGroups.append(i)
                 groupParameters = formattedGroups
-
-
             except Exception:
                 print_exc()
                 spark_result = 'Error occured while processing query.'
 
+            # Execute Mapreduce #
             try:
                 output_folder = ''.join(random.choice(string.ascii_uppercase) for _ in range(8))
                 output_path = os.path.join('output', output_folder)
@@ -240,6 +251,7 @@ class DefaultView(TemplateView):
                 print_exc()
                 mapreduce_result = 'Error occured while executing mapreduce.'
 
+            # Execute Spark #
             try:
                 spark_start = time()
                 spark_result, spark_operations = execute_query2(table, groupParameters, selectList, functionType, functionParameter, havingFunction, havingOperator, havingParameter)
@@ -249,18 +261,18 @@ class DefaultView(TemplateView):
                 spark_result = 'Error occured while executing spark.'
         else:
             return HttpResponseBadRequest('Invalid SQL Query. Please input valid SQL query.')
-        spark_time = spark_end - spark_start
-        mapreduce_time = mapreduce_end - mapreduce_start
+        mapreduce_time = mapreduce_end - mapreduce_start  # Compute Mapreduce Runtime
+        spark_time = spark_end - spark_start  # Compute Spark Runtime
         end_result = {
             'mapreduce': {
+                'mapreduce_time': mapreduce_time,
                 'mapper_input': mapper_input,
                 'reducer_input': reducer_input,
-                'mapreduce_time': mapreduce_time,
                 'mapreduce_result': mapreduce_result,
             },
             'spark': {
-                'spark_operations': spark_operations,
                 'spark_time': spark_time,
+                'spark_operations': spark_operations,
                 'spark_result': spark_result
             }
         }

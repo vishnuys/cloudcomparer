@@ -12,6 +12,7 @@ def execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter,
     operations_performed = []
     file_one = os.path.join('files', t1 + '.csv')
     file_two = os.path.join('files', t2 + '.csv')
+
     if t1 == 'users':
         df1 = spark.read.csv(file_one, header=False, schema=users_schema)
         operations_performed.append('Read File 1 and Create RDD according to table schema: Users')
@@ -44,7 +45,6 @@ def execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter,
 
     joined = df1.join(df2, attr1)
     operations_performed.append('Perform Inner Join based on attribute: ' + attr1)
-    operations_performed.append('Filter the result based on the condition: ' + " ".join([c2_attr, operator, str(parameter)]))
 
     if operator == '=':
         filtered = joined.filter(col(c2_attr) == parameter)
@@ -60,6 +60,7 @@ def execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter,
         filtered = joined.filter(col(c2_attr) != parameter)
     else:
         return 'Invalid comparision operator obtained. Please enter valid comparision operator.', operations_performed
+    operations_performed.append('Filter the result based on the condition: ' + " ".join([c2_attr, operator, str(parameter)]))
 
     operations_performed.append('Convert obtained DF to JSON')
     return filtered.toJSON().map(lambda j: json.loads(j)).collect(), operations_performed
