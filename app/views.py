@@ -170,9 +170,45 @@ class DefaultView(TemplateView):
                     groupParameters = groupParameters.split(',')
                 if ',' in groupParameters:
                     groupParameters.remove(',')
+                formattedGroups = []
+                for i in groupParameters:
+                    if ',' in i:
+                        if i[-1] == ',':
+                            i = i[:-1]
+                        if ',' in i:
+                            formattedGroups += i.split(',')
+                        else:
+                            formattedGroups.append(i)
+                    else:
+                        formattedGroups.append(i)
+                groupParameters = formattedGroups
             except Exception:
                 print_exc()
                 spark_result = 'Error occured while processing query.'
+
+            try:
+                output_folder = ''.join(random.choice(string.ascii_uppercase) for _ in range(8))
+                output_path = os.path.join('output', output_folder)
+                fileinput = os.path.join(HDFS_CSV_PATH, table + '.csv')
+                rowlist = [table_row_mapper[table][x] for x in groupParameters]
+                rowstring = " ".join(list(map(str, rowlist)))
+                functionRow = table_row_mapper[table][functionParameter]
+                mapper_path = os.path.join(BASE_DIR, 'mapreduce/q2_mapper.py')
+                reducer_path = os.path.join(BASE_DIR, 'mapreduce/q2_reducer.py')
+                cmd = ' hadoop jar %s -input %s -mapper "%s %s" -reducer "%s %s %s %s" -output %s' % (HADOOP_STREAMER_PATH, fileinput, mapper_path, rowstring, reducer_path, functionType, functionRow, havingParameter, output_path)
+                mapreduce_start = time()
+                call(cmd, shell=True)
+                output_file = os.path.join(output_path, 'part-00000')
+                mapreduce_result = []
+                map_output = Popen(["hdfs", "dfs", "-cat", output_file], stdout=PIPE)
+                for line in map_output.stdout:
+                    newline = line.decode("utf-8")
+                    mapreduce_result.append(eval(newline))
+                mapreduce_end = time()
+            except Exception:
+                print_exc()
+                mapreduce_result = 'Error occured while executing mapreduce.'
+
             try:
                 spark_start = time()
                 spark_result = execute_query2(table, groupParameters, selectList, functionType, functionParameter, havingFunction, havingOperator, havingParameter)

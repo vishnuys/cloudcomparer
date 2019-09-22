@@ -98,7 +98,4 @@ def execute_query2(table, groupParameters, selectList, functionType, functionPar
         else:
             return 'Invalid comparision operator obtained. Please enter valid comparision operator.'
 
-    filtered = filtered.join(dataframe, groupParameters[0]).select(selectList).dropDuplicates()
-    filtered.show()
-
     return filtered.toJSON().map(lambda j: json.loads(j)).collect()

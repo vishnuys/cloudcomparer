@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 import sys
 
 func_name = (sys.argv[1]).upper()
