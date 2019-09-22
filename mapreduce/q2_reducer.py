@@ -1,22 +1,32 @@
 #!/usr/bin/env python3
+
+# reducer for query 2:
+# 
+# reducer input: <group_by_cols, all_cols>
+# reducer output: <group_by_cols, aggregate function output>
+#
+#
+
 import sys
 
+# input parameters : function name, parameter column, having value
 func_name = (sys.argv[1]).upper()
 func_param = int(sys.argv[2])
 having_val_ = sys.argv[3]
 
+# keep track of current key and its values
 current_key = None
 row_list = []
 
+# apply aggregate function and print output
 def transform_and_print(key):
     func_output_type = 'int'
     output_row = key.split(',')
+
     if func_name == 'COUNT':
         output_row.append(len(row_list))
     elif func_name == 'MAX':
         try:
-            #print ('before max: ',end=' ')
-            #print (row_list[func_param])
             output_row.append(max(list(map(int, [ r[func_param] for r in row_list ]))))
         except:
             func_output_type = 'string'
@@ -42,6 +52,7 @@ def transform_and_print(key):
         print(output_row)
 
 for line in sys.stdin:
+    # input preprocessing
     line = line.strip()
     key, value_list = line.split('\t',1)
     value_list = value_list.strip().split(',')
@@ -54,6 +65,8 @@ for line in sys.stdin:
         current_key = key
         row_list = []
         row_list.append(value_list)
+
+# process the last key
 transform_and_print(current_key)
         
 
