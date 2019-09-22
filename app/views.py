@@ -5,13 +5,13 @@ from time import time
 from traceback import print_exc
 from django.shortcuts import render
 from subprocess import call, Popen, PIPE
-from cloudproject.settings import BASE_DIR, HADOOP_STREAMER_PATH
 from django.views.generic import TemplateView
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .helper import handle_condition, table_row_mapper
 from spark.sparker import execute_query1, execute_query2
 from django.http import HttpResponseBadRequest, JsonResponse
+from cloudproject.settings import BASE_DIR, HADOOP_STREAMER_PATH, HDFS_CSV_PATH
 
 
 # Create your views here.
@@ -92,8 +92,8 @@ class DefaultView(TemplateView):
             try:
                 output_folder = ''.join(random.choice(string.ascii_uppercase) for _ in range(8))
                 output_path = os.path.join('output', output_folder)
-                fileinput_one = os.path.join('files', t1 + '.csv')
-                fileinput_two = os.path.join('files', t2 + '.csv')
+                fileinput_one = os.path.join(HDFS_CSV_PATH, t1 + '.csv')
+                fileinput_two = os.path.join(HDFS_CSV_PATH, t2 + '.csv')
                 row_1 = table_row_mapper[t1][attr1]
                 row_2 = table_row_mapper[t2][attr2]
                 mapper_path = os.path.join(BASE_DIR, 'mapreduce/mapper_hdfs.py')

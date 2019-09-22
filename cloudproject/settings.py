@@ -119,6 +119,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 try:
-    from .config import HADOOP_STREAMER_PATH
+    from .config import HADOOP_STREAMER_PATH, HDFS_CSV_PATH
 except ModuleNotFoundError:
-    raise ModuleNotFoundError("Please set HADOOP_STREAMER_PATH in cloudproject/config.py to continue")
+    raise ModuleNotFoundError("Please set HADOOP_STREAMER_PATH and HDFS_CSV_PATH in cloudproject/config.py to continue")
