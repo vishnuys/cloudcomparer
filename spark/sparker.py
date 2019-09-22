@@ -32,12 +32,7 @@ def execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter,
         df2 = spark.read.csv(file_two, header=False, schema=rating_schema)
     else:
         return 'No such table found. Please enter valid Table 2 name.'
-    # df1.show()
-    # df2.show()
     joined = df1.join(df2, attr1)
-    # joined.show()
-    # print("%r %r %r" % (c2_attr, operator, parameter))
-    # print(type(c2_attr), type(operator), type(parameter))
     if operator == '=':
         filtered = joined.filter(col(c2_attr) == parameter)
     elif operator == '<':
@@ -53,8 +48,6 @@ def execute_query1(t1, t1_alias, t2, t2_alias, attr1, attr2, c2_attr, parameter,
     else:
         return 'Invalid comparision operator obtained. Please enter valid comparision operator.'
 
-    # filtered.show(filtered.count())
-    # print(joined.count(), filtered.count())
     return filtered.toJSON().map(lambda j: json.loads(j)).collect()
 
 
@@ -71,16 +64,7 @@ def execute_query2(table, groupParameters, selectList, functionType, functionPar
     else:
         return 'Invalid table name. Please enter valid table name.'
 
-    if len(groupParameters) == 1:
-        grouped = dataframe.groupBy(groupParameters[0])
-    elif len(groupParameters) == 2:
-        grouped = dataframe.groupBy(groupParameters[0], groupParameters[1])
-    elif len(groupParameters) == 3:
-        grouped = dataframe.groupBy(groupParameters[0], groupParameters[1], groupParameters[2])
-    elif len(groupParameters) == 4:
-        grouped = dataframe.groupBy(groupParameters[0], groupParameters[1], groupParameters[2], groupParameters[3])
-    elif len(groupParameters) == 5:
-        grouped = dataframe.groupBy(groupParameters[0], groupParameters[1], groupParameters[2], groupParameters[3], groupParameters[4])
+    grouped = dataframe.groupBy(groupParameters)
 
     if functionType.lower() == 'count':
         result = grouped.count()
@@ -90,10 +74,15 @@ def execute_query2(table, groupParameters, selectList, functionType, functionPar
         result = grouped.max()
     elif functionType.lower() == 'sum':
         result = grouped.sum()
+    else:
+        return "Invalid Aggregation function. Please enter valid aggregation function"
+
+    filtered = result
 
     if len(havingFunction) > 0:
         havingFunction = havingFunction.lower()
         col_name = 'count' if 'count' in havingFunction else havingFunction
+        selectList.append(col_name)
         if havingOperator == '=':
             filtered = result.filter(col(col_name) == havingParameter)
         elif havingOperator == '<':
@@ -108,5 +97,8 @@ def execute_query2(table, groupParameters, selectList, functionType, functionPar
             filtered = result.filter(col(col_name) != havingParameter)
         else:
             return 'Invalid comparision operator obtained. Please enter valid comparision operator.'
+
+    filtered = filtered.join(dataframe, groupParameters[0]).select(selectList).dropDuplicates()
+    filtered.show()
 
     return filtered.toJSON().map(lambda j: json.loads(j)).collect()
