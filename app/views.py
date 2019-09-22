@@ -2,18 +2,16 @@ import os
 import random
 import string
 from time import time
-from json import dumps
-from subprocess import call
 from traceback import print_exc
 from django.shortcuts import render
-from cloudproject.settings import BASE_DIR
+from subprocess import call, Popen, PIPE
+from cloudproject.settings import BASE_DIR, HADOOP_STREAMER_PATH
 from django.views.generic import TemplateView
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .helper import handle_condition, table_row_mapper
 from spark.sparker import execute_query1, execute_query2
-from django.http import HttpResponse, HttpResponseBadRequest
-# from IPython import embed
+from django.http import HttpResponseBadRequest, JsonResponse
 
 
 # Create your views here.
@@ -93,14 +91,22 @@ class DefaultView(TemplateView):
                 spark_result = 'Error occured while processing query.'
             try:
                 output_folder = ''.join(random.choice(string.ascii_uppercase) for _ in range(8))
-                output_path = os.path.join(BASE_DIR, 'output', output_folder)
+                output_path = os.path.join('output', output_folder)
                 fileinput_one = os.path.join('files', t1 + '.csv')
                 fileinput_two = os.path.join('files', t2 + '.csv')
                 row_1 = table_row_mapper[t1][attr1]
                 row_2 = table_row_mapper[t2][attr2]
-                cmd = 'hadoop jar /home/ysv/hadoop/share/hadoop/tools/lib/hadoop-streaming-3.1.2.jar -input %s %s -mapper "/home/ysv/cloud/cloudproject/mapreduce/mapper_hdfs.py %s %s %s %s" -reducer "/home/ysv/cloud/cloudproject/mapreduce/reducer_hdfs.py %s %s %s %s" -output %s' % (fileinput_one, fileinput_two, t1, t2, row_1, row_2, condition_table, condition_row, operator, parameter, output_path)
+                mapper_path = os.path.join(BASE_DIR, 'mapreduce/mapper_hdfs.py')
+                reducer_path = os.path.join(BASE_DIR, 'mapreduce/reducer_hdfs.py')
+                cmd = 'hadoop jar %s -input %s %s -mapper "%s %s %s %s %s" -reducer "%s %s %s %s %s" -output %s' % (HADOOP_STREAMER_PATH, fileinput_one, fileinput_two, mapper_path, t1, t2, row_1, row_2, reducer_path, condition_table, condition_row, operator, parameter, output_path)
                 mapreduce_start = time()
                 call(cmd, shell=True)
+                output_file = os.path.join(output_path, 'part-00000')
+                mapreduce_result = []
+                map_output = Popen(["hdfs", "dfs", "-cat", output_file], stdout=PIPE)
+                for line in map_output.stdout:
+                    newline = line.decode("utf-8")
+                    mapreduce_result.append(eval(newline))
                 mapreduce_end = time()
             except Exception:
                 print_exc()
@@ -171,9 +177,14 @@ class DefaultView(TemplateView):
         spark_time = spark_end - spark_start
         mapreduce_time = mapreduce_end - mapreduce_start
         end_result = {
-            'mapreduce_result': mapreduce_result,
-            'mapreduce_time': mapreduce_time,
-            'spark_time': spark_time,
-            'spark_result': spark_result
+            'mapreduce': {
+                'mapreduce_time': mapreduce_time,
+                'mapreduce_result': mapreduce_result,
+
+            },
+            'spark': {
+                'spark_time': spark_time,
+                'spark_result': spark_result
+            }
         }
-        return HttpResponse(dumps(end_result))
+        return JsonResponse(end_result)
