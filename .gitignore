@@ -8,7 +8,7 @@ __pycache__/
 
 #project
 output
-
+cloudproject/config.py
 # Distribution / packaging
 .Python
 build/
