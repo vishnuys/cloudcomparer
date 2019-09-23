@@ -33,6 +33,8 @@ class DefaultView(TemplateView):
         mapper_input = {}
         reducer_input = {}
         spark_operations = []
+        spark_result_count = 0
+        mapreduce_result_count = 0
 
         # Determine Query type #
         if 'group' in query.lower():
@@ -132,6 +134,7 @@ class DefaultView(TemplateView):
                 mapreduce_result = []
                 map_output = Popen(["hdfs", "dfs", "-cat", output_file], stdout=PIPE)
                 for line in map_output.stdout:
+                    mapreduce_result_count += 1
                     newline = line.decode("utf-8")
                     mapreduce_result.append(eval(newline))
                 mapreduce_end = time()
@@ -244,6 +247,7 @@ class DefaultView(TemplateView):
                 mapreduce_result = []
                 map_output = Popen(["hdfs", "dfs", "-cat", output_file], stdout=PIPE)
                 for line in map_output.stdout:
+                    mapreduce_result_count += 1
                     newline = line.decode("utf-8")
                     mapreduce_result.append(eval(newline))
                 mapreduce_end = time()
@@ -268,10 +272,13 @@ class DefaultView(TemplateView):
                 'mapreduce_time': mapreduce_time,
                 'mapper_input': mapper_input,
                 'reducer_input': reducer_input,
+                'mapreduce_result_count': mapreduce_result_count,
                 'mapreduce_result': mapreduce_result,
+
             },
             'spark': {
                 'spark_time': spark_time,
+                'spark_result_count': len(spark_result),
                 'spark_operations': spark_operations,
                 'spark_result': spark_result
             }
