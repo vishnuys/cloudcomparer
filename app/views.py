@@ -195,9 +195,22 @@ class DefaultView(TemplateView):
                     havingIndex = query_list.index('HAVING')
                     groupParameters = query_list[byIndex + 1:havingIndex]
                     havingCondition = query_list[havingIndex + 1:]
-                    havingFunction = havingCondition[0]
-                    havingParameter = int(havingCondition[2]) if havingCondition[2].isnumeric() else havingCondition[2].strip('"').strip("'")
-                    havingOperator = havingCondition[1]
+                    if len(havingCondition) == 1:
+                        symbols = [x for x in havingCondition[0] if x in ['<', '>', '=', '!']]
+                        havingOperator = ''.join(symbols)
+                        havingFunction, havingParameter = havingCondition.split(symbols)
+                    elif len(havingCondition) == 2:
+                        havingOperator = '>'
+                        if '>' in havingCondition[0]:
+                            havingCondition[0].remove('>')
+                        elif '>' in havingCondition[1]:
+                            havingCondition[1].remove('>')
+                        havingFunction = havingCondition[0]
+                        havingParameter = int(havingCondition[1]) if havingCondition[1].isnumeric() else havingCondition[1].strip('"').strip("'")
+                    elif len(havingCondition) == 3:
+                        havingFunction = havingCondition[0]
+                        havingParameter = int(havingCondition[2]) if havingCondition[2].isnumeric() else havingCondition[2].strip('"').strip("'")
+                        havingOperator = havingCondition[1]
                 else:
                     groupParameters = query_list[byIndex + 1:]
                 if len(groupParameters) == 1 and ',' in groupParameters:
